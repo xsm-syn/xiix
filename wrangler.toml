@@ -1,0 +1,31 @@
+name = "xsm"
+main = "build/worker/shim.mjs"
+compatibility_date = "2024-05-23"
+minify = true
+workers_dev = true
+routes = [
+  { pattern = "2359.dpdns.org", custom_domain = true },
+  { pattern = "ava.game.naver.com.2359.dpdns.org", custom_domain = true },
+  { pattern = "graph.instagram.com.2359.dpdns.org", custom_domain = true },
+  { pattern = "zaintest.vuclip.com.2359.dpdns.org", custom_domain = true },
+  { pattern = "support.zoom.us.2359.dpdns.org", custom_domain = true },  
+  { pattern = "bakrie.ac.id.2359.dpdns.org", custom_domain = true },
+  { pattern = "zoomgov.2359.dpdns.org", custom_domain = true },
+  { pattern = "investors.spotify.com.2359.dpdns.org", custom_domain = true },
+  { pattern = "app.gopay.co.id.2359.dpdns.org", custom_domain = true },
+  { pattern = "quiz.int.visio.com.2359.dpdns.org", custom_domain = true },
+]
+
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"
+
+[env.dev]
+build = { command = "cargo install -q worker-build && worker-build --dev" }
+
+[vars]
+UUID = "0fbf4f81-2598-4b6a-a623-0ead4cb9efa8"
+MAIN_PAGE_URL = "https://raw.githubusercontent.com/xsm-syn/xiix/refs/heads/main/web/index.html"
+SUB_PAGE_URL = "https://raw.githubusercontent.com/xsm-syn/xiix/refs/heads/main/web/sub.html"
+
+

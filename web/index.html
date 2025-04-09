@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XSM VPN</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- QR Code Library -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<!-- Add Inter font -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --primary-light: #818cf8;
+        --secondary: #10b981;
+        --secondary-dark: #059669;
+        --accent: #f43f5e;
+        --dark: #0f172a;
+        --dark-light: #1e293b;
+        --light: #f8fafc;
+        --gray: #64748b;
+        --gray-light: #94a3b8;
+        --gray-dark: #334155;
+    }
+    
+    * {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    body {
+        background-color: var(--dark);
+        background-image: 
+            radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 90% 10%, rgba(244, 63, 94, 0.05) 0%, transparent 50%),
+            radial-gradient(circle at 10% 90%, rgba(56, 189, 248, 0.05) 0%, transparent 50%);
+        color: var(--light);
+        min-height: 100vh;
+    }
+    
+    .glass-card {
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        box-shadow: 
+            0 10px 15px -3px rgba(0, 0, 0, 0.1),
+            0 4px 6px -2px rgba(0, 0, 0, 0.05),
+            0 0 0 1px rgba(99, 102, 241, 0.1);
+        border-radius: 16px;
+    }
+    
+    .glass-input {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        color: var(--light);
+        transition: all 0.3s ease;
+        border-radius: 8px;
+    }
+    
+    .glass-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+        background: rgba(15, 23, 42, 0.8);
+    }
+    
+    .glass-input[readonly] {
+        background: rgba(51, 65, 85, 0.4);
+    }
+    
+    .glass-select {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        color: var(--light);
+        border-radius: 8px;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1rem;
+        padding-right: 2.5rem;
+    }
+    
+    .glass-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+        background-color: rgba(15, 23, 42, 0.8);
+    }
+    
+    .primary-btn {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2), 0 2px 4px -1px rgba(99, 102, 241, 0.1);
+    }
+    
+    .primary-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: all 0.6s ease;
+    }
+    
+    .primary-btn:hover::before {
+        left: 100%;
+    }
+    
+    .primary-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 10px -1px rgba(99, 102, 241, 0.3), 0 2px 4px -1px rgba(99, 102, 241, 0.2);
+    }
+    
+    .secondary-btn {
+        background: rgba(51, 65, 85, 0.6);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        color: var(--light);
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .secondary-btn:hover {
+        background: rgba(71, 85, 105, 0.7);
+        transform: translateY(-1px);
+    }
+    
+    .tab-btn {
+        position: relative;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        color: var(--gray-light);
+    }
+    
+    .tab-btn.active {
+        color: var(--primary-light);
+    }
+    
+    .tab-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, var(--primary), var(--primary-light));
+        box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+        border-radius: 2px;
+    }
+    
+    .tab-btn:not(.active):hover {
+        color: var(--light);
+    }
+    
+    .glow-text {
+        text-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+    }
+    
+    .divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    }
+    
+    .glass-code {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        font-family: 'Courier New', monospace;
+        border-radius: 8px;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 0.6; }
+        50% { opacity: 1; }
+        100% { opacity: 0.6; }
+    }
+    
+    .pulse-animation {
+        animation: pulse 2s infinite ease-in-out;
+    }
+    
+    .loading-spinner {
+        border: 3px solid rgba(51, 65, 85, 0.3);
+        border-top: 3px solid var(--primary);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+    }
+    
+    .loading-spinner-sm {
+        border: 2px solid rgba(51, 65, 85, 0.3);
+        border-top: 2px solid var(--primary);
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Card styles */
+    .proxy-card {
+        background: rgba(30, 41, 59, 0.5);
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        border: 1px solid rgba(99, 102, 241, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .proxy-card:hover {
+        background: rgba(51, 65, 85, 0.5);
+        border-color: rgba(99, 102, 241, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    /* Pagination styles */
+    .pagination-btn {
+        min-width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+        background: rgba(51, 65, 85, 0.4);
+        border: 1px solid rgba(99, 102, 241, 0.1);
+    }
+
+    .pagination-btn.active {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        border: none;
+    }
+
+    .pagination-btn:not(.active):not(.disabled):hover {
+        background: rgba(71, 85, 105, 0.5);
+        border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .pagination-btn.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* QR Code container */
+    .qrcode-container {
+        background-color: white;
+        padding: 12px;
+        border-radius: 12px;
+        display: inline-block;
+        margin: 0 auto;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .qrcode-container img, 
+    .qrcode-container canvas {
+        display: block;
+        max-width: 100%;
+        height: auto;
+    }
+    
+    /* Info cards */
+    .info-card {
+        background: rgba(15, 23, 42, 0.5);
+        border-radius: 8px;
+        padding: 0.75rem;
+        border: 1px solid rgba(99, 102, 241, 0.1);
+    }
+    
+    /* Animated background for header */
+    .animated-bg {
+        position: relative;
+        overflow: hidden;
+        border-radius: 12px 12px 0 0;
+        padding: 2rem 0;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(16, 185, 129, 0.1));
+    }
+    
+    .animated-bg::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            to bottom right,
+            rgba(99, 102, 241, 0),
+            rgba(99, 102, 241, 0.1),
+            rgba(16, 185, 129, 0.1),
+            rgba(16, 185, 129, 0)
+        );
+        transform: rotate(30deg);
+        animation: shimmer 10s linear infinite;
+    }
+    
+    @keyframes shimmer {
+        0% {
+            transform: rotate(30deg) translate(-50%, -50%);
+        }
+        100% {
+            transform: rotate(30deg) translate(50%, 50%);
+        }
+    }
+    
+    /* Icon styles */
+    .icon-glow {
+        filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.5));
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+        .tab-btn {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.75rem;
+        }
+        
+        .tab-btn i {
+            margin-right: 0.25rem;
+        }
+        
+        .pagination-btn {
+            min-width: 32px;
+            height: 32px;
+            font-size: 0.75rem;
+        }
+    }
+</style>
+</head>
+<body class="font-sans">
+<div class="container mx-auto px-4 py-6 max-w-xl">
+    <div class="glass-card overflow-hidden">
+        <!-- Animated header background -->
+        <div class="animated-bg">
+            <div class="flex items-center justify-center">
+                <div class="mr-3">
+                    <i class="fas fa-network-wired text-4xl icon-glow text-indigo-400"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-center glow-text bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-emerald-400">XSM VPN</h1>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <!-- Proxy List Section -->
+            <div id="proxy-list-section">
+                <div class="flex justify-between items-center mb-5">
+                    <div class="flex items-center">
+                        <i class="fas fa-server mr-2 text-indigo-400"></i>
+                        <h2 class="text-xl font-semibold">Proxy List</h2>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button id="refresh-btn" class="primary-btn py-2 px-4 rounded-lg flex items-center text-sm">
+                            <i class="fas fa-sync-alt mr-2"></i>Refresh
+                        </button>
+                        <button id="custom-url-btn" class="secondary-btn py-2 px-4 rounded-lg flex items-center text-sm">
+                            <i class="fas fa-link mr-2"></i>URL
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="custom-url-input" class="mb-5 hidden">
+                    <div class="flex">
+                        <input type="text" id="proxy-url" class="flex-1 px-4 py-2.5 glass-input rounded-l-lg text-sm" 
+                            placeholder="Enter custom proxy list URL" 
+                            value="https://raw.githubusercontent.com/xsm-syn/Nautica/refs/heads/main/proxyip.txt">
+                        <button id="load-custom-url" class="primary-btn px-4 py-2.5 rounded-r-lg">
+                            Load
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="loading-indicator" class="text-center py-10 hidden">
+                    <div class="loading-spinner mx-auto mb-4"></div>
+                    <p class="text-indigo-300 text-sm">Loading proxy list...</p>
+                </div>
+                
+                <!-- Search input -->
+                <div class="mb-4">
+                    <div class="relative">
+                        <input type="text" id="search-input" class="w-full pl-10 pr-4 py-2.5 glass-input rounded-lg text-sm" placeholder="Search by provider or country...">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mobile-friendly proxy list -->
+                <div id="proxy-list-container" class="mt-4">
+                    <!-- Proxy cards will be populated here -->
+                </div>
+                
+                <!-- Pagination controls -->
+                <div id="pagination-container" class="flex justify-center items-center mt-6 space-x-2">
+                    <!-- Pagination buttons will be added here -->
+                </div>
+
+                <!-- Proxy count info -->
+                <div id="proxy-count-info" class="text-center mt-3 text-sm text-gray-400">
+                    <!-- Proxy count will be shown here -->
+                </div>
+                
+                <div id="no-proxies-message" class="text-center py-10 hidden">
+                    <i class="fas fa-exclamation-circle text-rose-400 text-4xl mb-3"></i>
+                    <p class="text-gray-300 text-sm">No proxies found. Please refresh or try a different URL.</p>
+                </div>
+            </div>
+            
+            <!-- Account Creation Section -->
+            <div id="account-creation-section" class="mt-6 hidden">
+                <div class="pt-4">
+                    <div class="divider mb-6"></div>
+                    <div class="flex justify-between items-center mb-5">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-plus mr-2 text-indigo-400"></i>
+                            <h2 class="text-xl font-semibold">Create Account</h2>
+                        </div>
+                        <button id="back-to-list" class="flex items-center text-indigo-400 hover:text-indigo-300 transition-colors text-sm">
+                            <i class="fas fa-arrow-left mr-2"></i> Back to List
+                        </button>
+                    </div>
+                    
+                    <div class="glass-card p-5 mb-6">
+                        <h3 class="text-base font-medium text-indigo-400 mb-4">Selected Proxy</h3>
+                        
+                        <div id="proxy-basic-info" class="grid grid-cols-2 gap-4 mb-3">
+                            <div class="info-card">
+                                <span class="text-xs text-gray-400 block mb-1">Provider:</span>
+                                <span id="selected-provider" class="text-sm font-medium text-white">-</span>
+                            </div>
+                            <div class="info-card">
+                                <span class="text-xs text-gray-400 block mb-1">Country:</span>
+                                <span id="selected-country" class="text-sm font-medium text-white">-</span>
+                            </div>
+                            <div class="info-card">
+                                <span class="text-xs text-gray-400 block mb-1">IP:</span>
+                                <span id="selected-ip" class="text-sm font-medium text-white">-</span>
+                            </div>
+                            <div class="info-card">
+                                <span class="text-xs text-gray-400 block mb-1">Port:</span>
+                                <span id="selected-port" class="text-sm font-medium text-white">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tabs -->
+                    <div class="flex border-b border-gray-700 mb-6 overflow-x-auto">
+                        <button class="tab-btn active py-3 px-4 font-medium text-sm focus:outline-none" data-target="vmess-form">
+                            <i class="fas fa-shield-alt mr-2"></i>VMess
+                        </button>
+                        <button class="tab-btn py-3 px-4 font-medium text-sm focus:outline-none" data-target="vless-form">
+                            <i class="fas fa-bolt mr-2"></i>VLESS
+                        </button>
+                        <button class="tab-btn py-3 px-4 font-medium text-sm focus:outline-none" data-target="trojan-form">
+                            <i class="fas fa-user-secret mr-2"></i>Trojan
+                        </button>
+                        <button class="tab-btn py-3 px-4 font-medium text-sm focus:outline-none" data-target="ss-form">
+                            <i class="fas fa-mask mr-2"></i>SS
+                        </button>
+                    </div>
+                    
+                    <!-- VMess Form -->
+                    <div id="vmess-form" class="protocol-form">
+                        <form id="vmess-account-form" class="space-y-5">
+                            <div>
+                                <label for="vmess-name" class="block text-sm font-medium text-gray-300 mb-2">Account Name</label>
+                                <input type="text" id="vmess-name" name="name" class="w-full px-4 py-2.5 glass-input rounded-lg text-sm" readonly>
+                            </div>
+                            
+                            <div>
+                                <label for="vmess-uuid" class="block text-sm font-medium text-gray-300 mb-2">UUID</label>
+                                <div class="flex">
+                                    <input type="text" id="vmess-uuid" name="uuid" class="flex-1 px-4 py-2.5 glass-input rounded-l-lg text-sm" value="0fbf4f81-2598-4b6a-a623-0ead4cb9efa8" required>
+                                    <button type="button" onclick="generateUUID('vmess-uuid')" class="secondary-btn px-4 py-2.5 rounded-r-lg hover:bg-slate-700">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="vmess-path" class="block text-sm font-medium text-gray-300 mb-2">Path</label>
+                                <input type="text" id="vmess-path" name="path" class="w-full px-4 py-2.5 glass-input rounded-lg text-sm" readonly>
+                            </div>
+                            
+                            <div>
+                                <label for="vmess-security" class="block text-sm font-medium text-gray-300 mb-2">TLS</label>
+                                <select id="vmess-security" name="security" class="w-full px-4 py-2.5 glass-select rounded-lg text-sm">
+                                    <option value="tls">TLS</option>
+                                    <option value="none">None</option>
+                                </select>
+                                <input type="hidden" id="vmess-encryption" name="encryption" value="zero">
+                            </div>
+                            
+                            <div class="pt-2">
+                                <button type="submit" class="w-full primary-btn py-3 px-4 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus-circle mr-2"></i> Create VMess Account
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- VLESS Form -->
+                    <div id="vless-form" class="protocol-form hidden">
+                        <form id="vless-account-form" class="space-y-5">
+                            <div>
+                                <label for="vless-name" class="block text-sm font-medium text-gray-300 mb-2">Account Name</label>
+                                <input type="text" id="vless-name" name="name" class="w-full px-4 py-2.5 glass-input rounded-lg text-sm" readonly>
+                            </div>
+                            
+                            <div>
+                                <label for="vless-uuid" class="block text-sm font-medium text-gray-300 mb-2">UUID</label>
+                                <div class="flex">
+                                    <input type="text" id="vless-uuid" name="uuid" class="flex-1 px-4 py-2.5 glass-input rounded-l-lg text-sm" value="0fbf4f81-2598-4b6a-a623-0ead4cb9efa8" required>
+                                    <button type="button" onclick="generateUUID('vless-uuid')" class="secondary-btn px-4 py-2.5 rounded-r-lg hover:bg-slate-700">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="vless-path" class="block text-sm font-medium text-gray-300 mb-2">Path</label>
+                                <input type="text" id="vless-path" name="path" class="w-full px-4 py-2.5 glass-input rounded-lg text-sm" readonly>
+                            </div>
+                            
+                            <div>
+                                <label for="vless-security" class="block text-sm font-medium text-gray-300 mb-2">TLS</label>
+                                <select id="vless-security" name="security" class="w-full px-4 py-2.5 glass-select rounded-lg text-sm">
+                                    <option value="tls">TLS</option>
+                                    <option value="none">None</option>
+                                </select>
+                                <input type="hidden" id="vless-encryption" name="encryption" value="none">
+                            </div>
+                            
+                            <div class="pt-2">
+                                <button type="submit" class="w-full primary-btn py-3 px-4 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus-circle mr-2"></i> Create VLESS Account
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Trojan Form -->
+                    <div id="trojan-form" class="protocol-form hidden">
+                        <form id="trojan-account-form" class="space-y-5">
+                            <div>
+                                <label for="trojan-name" class="block text-sm font-medium text-gray-300 mb-2">Account Name</label>
+                                <input type="text" id="trojan-name" name="name" class="w-full px-4 py-2.5 glass-input rounded-lg text-sm" readonly>
+                            </div>
+                            
+                            <div>
+                                <label for="trojan-password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                                <div class="flex">
+                                    <input type="text" id="trojan-password" name="password" class="flex-1 px-4 py-2.5 glass-input rounded-l-lg text-sm" value="0fbf4f81-2598-4b6a-a623-0ead4cb9efa8" required>
+                                    <button type="button" onclick="generatePassword('trojan-password')" class="secondary-btn px-4 py-2.5 rounded-r-lg hover:bg-slate-700">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="trojan-path" class="block text-sm font-medium text-gray-300 mb-2">Path</label>
+                                <input type="text" id="trojan-path" name="path" class="w-full px-4 py-2.5 glass-input rounded-lg text-sm" readonly>
+                            </div>
+                            
+                            <div>
+                                <label for="trojan-security" class="block text-sm font-medium text-gray-300 mb-2">TLS</label>
+                                <select id="trojan-security" name="security" class="w-full px-4 py-2.5 glass-select rounded-lg text-sm">
+                                    <option value="tls">TLS</option>
+                                    <option value="none">None</option>
+                                </select>
+                                <input type="hidden" id="trojan-sni" name="sni" value="2359.dpdns.org">
+                            </div>
+                            
+                            <div class="pt-2">
+                                <button type="submit" class="w-full primary-btn py-3 px-4 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus-circle mr-2"></i> Create Trojan Account
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Shadowsocks Form -->
+                    <div id="ss-form" class="protocol-form hidden">
+                        <form id="ss-account-form" class="space-y-5">
+                            <div>
+                                <label for="ss-name" class="block text-sm font-medium text-gray-300 mb-2">Account Name</label>
+                                <input type="text" id="ss-name" name="name" class="w-full px-4 py-2.5 glass-input rounded-lg text-sm" readonly>
+                            </div>
+                            
+                            <div>
+                                <label for="ss-password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                                <div class="flex">
+                                    <input type="text" id="ss-password" name="password" class="flex-1 px-4 py-2.5 glass-input rounded-l-lg text-sm" value="0fbf4f81-2598-4b6a-a623-0ead4cb9efa8" required>
+                                    <button type="button" onclick="generatePassword('ss-password')" class="secondary-btn px-4 py-2.5 rounded-r-lg hover:bg-slate-700">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="ss-path" class="block text-sm font-medium text-gray-300 mb-2">Path</label>
+                                <input type="text" id="ss-path" name="path" class="w-full px-4 py-2.5 glass-input rounded-lg text-sm" readonly>
+                            </div>
+                            
+                            <div>
+                                <label for="ss-security" class="block text-sm font-medium text-gray-300 mb-2">TLS</label>
+                                <select id="ss-security" name="security" class="w-full px-4 py-2.5 glass-select rounded-lg text-sm">
+                                    <option value="tls">TLS</option>
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
+                            
+                            <div class="pt-2">
+                                <button type="submit" class="w-full primary-btn py-3 px-4 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus-circle mr-2"></i> Create Shadowsocks Account
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Result Section -->
+            <div id="result-section" class="mt-6 hidden">
+                <div class="pt-4">
+                    <div class="divider mb-6"></div>
+                    <div class="flex justify-between items-center mb-5">
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle mr-2 text-emerald-400"></i>
+                            <h2 class="text-xl font-semibold">Account Created</h2>
+                        </div>
+                        <button id="back-to-form" class="flex items-center text-indigo-400 hover:text-indigo-300 transition-colors text-sm">
+                            <i class="fas fa-arrow-left mr-2"></i> Back
+                        </button>
+                    </div>
+                    
+                    <div class="glass-card p-5 mb-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-base font-medium text-indigo-400">Connection URL</h3>
+                            <button id="copy-url" class="flex items-center text-indigo-400 hover:text-indigo-300 text-xs transition-colors">
+                                <i class="far fa-copy mr-1"></i> Copy
+                            </button>
+                        </div>
+                        <div id="connection-url" class="text-xs glass-code p-4 rounded-lg break-all font-mono"></div>
+                    </div>
+                    
+                    <div class="glass-card p-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-base font-medium text-indigo-400">QR Code</h3>
+                            <button id="download-qr" class="flex items-center text-indigo-400 hover:text-indigo-300 text-xs transition-colors">
+                                <i class="fas fa-download mr-1"></i> Download
+                            </button>
+                        </div>
+                        <div class="flex justify-center py-4">
+                            <div id="qrcode" class="qrcode-container"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 flex space-x-3">
+                        <button id="create-new" class="flex-1 primary-btn py-3 px-4 rounded-lg flex items-center justify-center text-sm">
+                            <i class="fas fa-plus-circle mr-2"></i> Create Another
+                        </button>
+                        <button id="back-to-list-from-result" class="flex-1 secondary-btn py-3 px-4 rounded-lg flex items-center justify-center text-sm">
+                            <i class="fas fa-list mr-2"></i> Back to List
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="text-center mt-5 text-gray-500 text-xs">
+        <p>© 2025 XSM VPN | Secure Connection Technology</p>
+    </div>
+</div>
+
+<script>
+// Global variables
+let proxyList = [];
+let filteredProxyList = [];
+let selectedProxy = null;
+const defaultProxyUrl = 'https://raw.githubusercontent.com/xsm-syn/Nautica/refs/heads/main/proxyip.txt';
+const serverDomain = '2359.dpdns.org';
+const defaultUUID = '0fbf4f81-2598-4b6a-a623-0ead4cb9efa8';
+const itemsPerPage = 10;
+let currentPage = 1;
+
+// DOM elements
+const proxyListSection = document.getElementById('proxy-list-section');
+const accountCreationSection = document.getElementById('account-creation-section');
+const resultSection = document.getElementById('result-section');
+const loadingIndicator = document.getElementById('loading-indicator');
+const proxyListContainer = document.getElementById('proxy-list-container');
+const noProxiesMessage = document.getElementById('no-proxies-message');
+const customUrlInput = document.getElementById('custom-url-input');
+const proxyUrlInput = document.getElementById('proxy-url');
+const paginationContainer = document.getElementById('pagination-container');
+const proxyCountInfo = document.getElementById('proxy-count-info');
+const searchInput = document.getElementById('search-input');
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Display fallback proxy list immediately to ensure something is visible
+    displayFallbackProxyList();
+    
+    // Then try to load the actual proxy list
+    loadProxyList(defaultProxyUrl);
+    
+    // Event listeners
+    document.getElementById('refresh-btn').addEventListener('click', function() {
+        loadProxyList(defaultProxyUrl);
+    });
+    
+    document.getElementById('custom-url-btn').addEventListener('click', function() {
+        customUrlInput.classList.toggle('hidden');
+    });
+    
+    document.getElementById('load-custom-url').addEventListener('click', function() {
+        const url = proxyUrlInput.value.trim();
+        if (url) {
+            loadProxyList(url);
+        }
+    });
+    
+    document.getElementById('back-to-list').addEventListener('click', function() {
+        showProxyListSection();
+    });
+    
+    document.getElementById('back-to-form').addEventListener('click', function() {
+        resultSection.classList.add('hidden');
+        accountCreationSection.classList.remove('hidden');
+    });
+    
+    document.getElementById('create-new').addEventListener('click', function() {
+        resultSection.classList.add('hidden');
+        accountCreationSection.classList.remove('hidden');
+    });
+    
+    document.getElementById('back-to-list-from-result').addEventListener('click', function() {
+        showProxyListSection();
+    });
+    
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+            filteredProxyList = [...proxyList];
+        } else {
+            filteredProxyList = proxyList.filter(proxy => 
+                proxy.provider.toLowerCase().includes(searchTerm) || 
+                proxy.country.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        currentPage = 1;
+        renderProxyList();
+    });
+    
+    // Protocol tabs
+    const protocolTabs = document.querySelectorAll('.tab-btn');
+    const protocolForms = document.querySelectorAll('.protocol-form');
+    
+    protocolTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all tabs
+            protocolTabs.forEach(t => {
+                t.classList.remove('active');
+            });
+            
+            // Add active class to clicked tab
+            tab.classList.add('active');
+            
+            // Hide all forms
+            protocolForms.forEach(form => {
+                form.classList.add('hidden');
+            });
+            
+            // Show the selected form
+            const targetId = tab.getAttribute('data-target');
+            document.getElementById(targetId).classList.remove('hidden');
+        });
+    });
+    
+    // Form submissions
+    const forms = [
+        document.getElementById('vmess-account-form'),
+        document.getElementById('vless-account-form'),
+        document.getElementById('trojan-account-form'),
+        document.getElementById('ss-account-form')
+    ];
+    
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(form);
+            const formType = form.id.split('-')[0]; // vmess, vless, trojan, or ss
+            
+            // Generate connection URL based on protocol
+            let connectionUrl = '';
+            
+            if (formType === 'vmess') {
+                const security = formData.get('security');
+                // Set port based on TLS setting
+                const port = security === 'tls' ? 443 : 80;
+                
+                const vmessConfig = {
+                    v: '2',
+                    ps: formData.get('name'),
+                    add: serverDomain,
+                    port: port,
+                    id: formData.get('uuid'),
+                    aid: '0',
+                    net: 'ws',
+                    type: 'none',
+                    host: serverDomain,
+                    path: formData.get('path'),
+                    tls: security === 'tls' ? 'tls' : '',
+                    sni: serverDomain,
+                    scy: 'zero'
+                };
+                
+                connectionUrl = 'vmess://' + btoa(JSON.stringify(vmessConfig));
+            } else if (formType === 'vless') {
+                const uuid = formData.get('uuid');
+                const path = encodeURIComponent(formData.get('path'));
+                const security = formData.get('security');
+                const encryption = 'none';
+                const name = encodeURIComponent(formData.get('name'));
+                // Set port based on TLS setting
+                const port = security === 'tls' ? 443 : 80;
+                
+                connectionUrl = `vless://${uuid}@${serverDomain}:${port}?encryption=${encryption}&security=${security}&type=ws&host=${serverDomain}&path=${path}#${name}`;
+            } else if (formType === 'trojan') {
+                const password = formData.get('password');
+                const path = encodeURIComponent(formData.get('path'));
+                const security = formData.get('security');
+                const sni = serverDomain;
+                const name = encodeURIComponent(formData.get('name'));
+                // Set port based on TLS setting
+                const port = security === 'tls' ? 443 : 80;
+                
+                connectionUrl = `trojan://${password}@${serverDomain}:${port}?security=${security}&type=ws&host=${serverDomain}&path=${path}&sni=${sni}#${name}`;
+            } else if (formType === 'ss') {
+                const password = formData.get('password');
+                const name = encodeURIComponent(formData.get('name'));
+                const path = encodeURIComponent(formData.get('path'));
+                const security = formData.get('security');
+                
+                // Use fixed cipher: none for Shadowsocks
+                const method = "none";
+                
+                // Base64 encode the method:password part
+                const userInfo = btoa(`${method}:${password}`);
+                
+                // Create the new format SS URL
+                connectionUrl = `ss://${userInfo}@${serverDomain}:443?encryption=none&type=ws&host=${serverDomain}&path=${path}&security=${security}&sni=${serverDomain}#${name}`;
+            }
+            
+            // Display the result
+            document.getElementById('connection-url').textContent = connectionUrl;
+            
+            // Generate QR code - Improved with multiple fallback methods
+            generateQRCode(connectionUrl);
+            
+            // Show result section
+            accountCreationSection.classList.add('hidden');
+            resultSection.classList.remove('hidden');
+        });
+    });
+    
+    // Copy URL button
+    document.getElementById('copy-url').addEventListener('click', function() {
+        const connectionUrl = document.getElementById('connection-url').textContent;
+        navigator.clipboard.writeText(connectionUrl).then(() => {
+            this.innerHTML = '<i class="fas fa-check mr-1"></i> Copied!';
+            setTimeout(() => {
+                this.innerHTML = '<i class="far fa-copy mr-1"></i> Copy';
+            }, 2000);
+        });
+    });
+    
+    // Download QR code button
+    document.getElementById('download-qr').addEventListener('click', function() {
+        downloadQRCode();
+    });
+});
+
+// Improved QR code generation with multiple fallback methods
+function generateQRCode(text) {
+    const qrcodeElement = document.getElementById('qrcode');
+    qrcodeElement.innerHTML = '';
+    
+    // Try multiple methods to generate QR code
+    try {
+        // Method 1: Try to generate QR code using toCanvas
+        QRCode.toCanvas(qrcodeElement, text, { 
+            width: 200,
+            margin: 1,
+            color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+            }
+        }, function(error) {
+            if (error) {
+                console.error("QR Code canvas error:", error);
+                // If canvas fails, try method 2
+                generateQRCodeFallback(text, qrcodeElement);
+            }
+        });
+    } catch (error) {
+        console.error("QR Code generation error:", error);
+        // If method 1 fails completely, try method 2
+        generateQRCodeFallback(text, qrcodeElement);
+    }
+}
+
+// Fallback QR code generation method
+function generateQRCodeFallback(text, container) {
+    try {
+        // Method 2: Try to generate QR code as SVG
+        QRCode.toString(text, {
+            type: 'svg',
+            width: 200,
+            margin: 1,
+            color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+            }
+        }, function(error, svg) {
+            if (error || !svg) {
+                console.error("QR Code SVG error:", error);
+                // If SVG fails, try method 3
+                generateQRCodeLastResort(text, container);
+            } else {
+                container.innerHTML = svg;
+            }
+        });
+    } catch (error) {
+        console.error("QR Code SVG generation error:", error);
+        // If method 2 fails completely, try method 3
+        generateQRCodeLastResort(text, container);
+    }
+}
+
+// Last resort QR code generation method
+function generateQRCodeLastResort(text, container) {
+    try {
+        // Method 3: Try to generate QR code as data URL
+        const encodedText = encodeURIComponent(text);
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedText}`;
+        
+        const img = document.createElement('img');
+        img.src = qrApiUrl;
+        img.alt = "QR Code";
+        img.width = 200;
+        img.height = 200;
+        img.onerror = function() {
+            container.innerHTML = '<div class="text-center text-rose-500">Failed to generate QR code</div>';
+        };
+        
+        container.innerHTML = '';
+        container.appendChild(img);
+    } catch (error) {
+        console.error("QR Code last resort error:", error);
+        container.innerHTML = '<div class="text-center text-rose-500">Failed to generate QR code</div>';
+    }
+}
+
+// Download QR code function
+function downloadQRCode() {
+    const qrcodeElement = document.getElementById('qrcode');
+    
+    // Try to find canvas or img in the QR code container
+    const canvas = qrcodeElement.querySelector('canvas');
+    const img = qrcodeElement.querySelector('img');
+    const svg = qrcodeElement.querySelector('svg');
+    
+    let imageUrl = null;
+    
+    if (canvas) {
+        // If canvas exists, convert it to data URL
+        try {
+            imageUrl = canvas.toDataURL('image/png');
+        } catch (e) {
+            console.error("Canvas to data URL error:", e);
+        }
+    } else if (img) {
+        // If img exists, use its src
+        imageUrl = img.src;
+    } else if (svg) {
+        // If SVG exists, convert it to data URL
+        try {
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            imageUrl = URL.createObjectURL(svgBlob);
+        } catch (e) {
+            console.error("SVG to data URL error:", e);
+        }
+    }
+    
+    if (imageUrl) {
+        // Create a link and trigger download
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = 'qrcode.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Revoke object URL if it was created from a blob
+        if (imageUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(imageUrl);
+        }
+    } else {
+        alert('Failed to download QR code. Please try again.');
+    }
+}
+
+// Function to display fallback proxy list
+function displayFallbackProxyList() {
+    // Add a fallback proxy list for immediate display
+    proxyList = [
+        { ip: '103.6.207.108', port: '8080', country: 'ID', provider: 'PT Pusat Media Indonesia' },
+        { ip: '45.8.107.73', port: '80', country: 'US', provider: 'Cloudflare Inc' },
+        { ip: '172.67.181.52', port: '443', country: 'US', provider: 'Cloudflare Inc' },
+        { ip: '104.21.69.85', port: '443', country: 'US', provider: 'Cloudflare Inc' },
+        { ip: '185.219.132.181', port: '8080', country: 'NL', provider: 'Netherlands Provider' },
+        { ip: '45.8.106.59', port: '80', country: 'UK', provider: 'British Telecom' },
+        { ip: '172.67.182.77', port: '443', country: 'JP', provider: 'Japan Telecom' },
+        { ip: '104.21.70.123', port: '8080', country: 'SG', provider: 'Singapore Telecom' },
+        { ip: '185.219.133.45', port: '3128', country: 'DE', provider: 'Deutsche Telekom' },
+        { ip: '45.8.105.26', port: '80', country: 'FR', provider: 'Orange France' },
+        { ip: '172.67.183.98', port: '443', country: 'CA', provider: 'Bell Canada' },
+        { ip: '104.21.71.205', port: '8080', country: 'AU', provider: 'Telstra Australia' },
+        { ip: '185.219.134.67', port: '3128', country: 'IT', provider: 'Telecom Italia' },
+        { ip: '45.8.104.83', port: '80', country: 'BR', provider: 'Brazil Telecom' },
+        { ip: '172.67.184.12', port: '443', country: 'RU', provider: 'Russian Telecom' }
+    ];
+    
+    filteredProxyList = [...proxyList];
+    renderProxyList();
+}
+
+// Process proxy list data
+function processProxyData(text) {
+    // Handle different line endings and remove empty lines
+    const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+    console.log(`Found ${lines.length} lines in proxy data`);
+    
+    if (lines.length === 0) {
+        noProxiesMessage.classList.remove('hidden');
+        return; // No data to process
+    }
+    
+    // Try to determine the format of the data
+    let delimiter = ','; // Default delimiter
+    
+    // Check if the data uses tabs or other delimiters
+    const firstLine = lines[0];
+    if (firstLine.includes('\t')) {
+        delimiter = '\t';
+    } else if (firstLine.includes('|')) {
+        delimiter = '|';
+    } else if (firstLine.includes(';')) {
+        delimiter = ';';
+    }
+    
+    // Parse proxy list with the detected delimiter
+    proxyList = lines.map(line => {
+        const parts = line.split(delimiter);
+        
+        // Require at least IP and port
+        if (parts.length >= 2) {
+            return {
+                ip: parts[0].trim(),
+                port: parts[1].trim(),
+                country: parts.length >= 3 ? parts[2].trim() : 'Unknown',
+                provider: parts.length >= 4 ? parts[3].trim() : 'Unknown Provider'
+            };
+        }
+        return null;
+    }).filter(proxy => proxy && proxy.ip && proxy.port);
+    
+    console.log(`Processed ${proxyList.length} valid proxies`);
+    
+    // If no valid proxies were found, show message and use fallback
+    if (proxyList.length === 0) {
+        noProxiesMessage.classList.remove('hidden');
+        displayFallbackProxyList();
+        return;
+    }
+    
+    // Reset pagination
+    currentPage = 1;
+    filteredProxyList = [...proxyList];
+    
+    // Render the proxy list
+    renderProxyList();
+}
+
+// Function to render the proxy list with pagination
+function renderProxyList() {
+    proxyListContainer.innerHTML = '';
+    
+    if (filteredProxyList.length === 0) {
+        noProxiesMessage.classList.remove('hidden');
+        paginationContainer.innerHTML = '';
+        proxyCountInfo.textContent = '';
+        return;
+    }
+    
+    noProxiesMessage.classList.add('hidden');
+    
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredProxyList.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, filteredProxyList.length);
+    
+    // Get current page items
+    const currentItems = filteredProxyList.slice(startIndex, endIndex);
+    
+    // Render proxy cards
+    currentItems.forEach((proxy, index) => {
+        const actualIndex = startIndex + index;
+        const card = document.createElement('div');
+        card.className = 'proxy-card';
+        card.innerHTML = `
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="font-medium text-sm">${proxy.provider}</div>
+                    <div class="text-xs text-gray-400 mt-1">${proxy.country} | ${proxy.ip}:${proxy.port}</div>
+                </div>
+                <button class="create-account-btn primary-btn py-2 px-4 rounded-lg text-xs" data-index="${actualIndex}">
+                    Create Account
+                </button>
+            </div>
+        `;
+        proxyListContainer.appendChild(card);
+    });
+    
+    // Add event listeners to create account buttons
+    document.querySelectorAll('.create-account-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'));
+            selectProxy(index);
+            showAccountCreationSection();
+        });
+    });
+    
+    // Render pagination controls
+    renderPagination(totalPages);
+    
+    // Update proxy count info
+    proxyCountInfo.textContent = `Showing ${startIndex + 1}-${endIndex} of ${filteredProxyList.length} proxies`;
+}
+
+// Function to render pagination controls
+function renderPagination(totalPages) {
+    paginationContainer.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    // Previous button
+    const prevBtn = document.createElement('button');
+    prevBtn.className = `pagination-btn ${currentPage === 1 ? 'disabled' : ''}`;
+    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            renderProxyList();
+        }
+    });
+    paginationContainer.appendChild(prevBtn);
+    
+    // Page numbers
+    const maxVisiblePages = window.innerWidth < 640 ? 3 : 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    // Adjust start page if we're near the end
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    // First page button if not visible
+    if (startPage > 1) {
+        const firstPageBtn = document.createElement('button');
+        firstPageBtn.className = 'pagination-btn';
+        firstPageBtn.textContent = '1';
+        firstPageBtn.addEventListener('click', () => {
+            currentPage = 1;
+            renderProxyList();
+        });
+        paginationContainer.appendChild(firstPageBtn);
+        
+        // Ellipsis if needed
+        if (startPage > 2) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'px-1 text-gray-400';
+            ellipsis.textContent = '...';
+            paginationContainer.appendChild(ellipsis);
+        }
+    }
+    
+    // Page buttons
+    for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+        pageBtn.textContent = i.toString();
+        pageBtn.addEventListener('click', () => {
+            currentPage = i;
+            renderProxyList();
+        });
+        paginationContainer.appendChild(pageBtn);
+    }
+    
+    // Last page button if not visible
+    if (endPage < totalPages) {
+        // Ellipsis if needed
+        if (endPage < totalPages - 1) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'px-1 text-gray-400';
+            ellipsis.textContent = '...';
+            paginationContainer.appendChild(ellipsis);
+        }
+        
+        const lastPageBtn = document.createElement('button');
+        lastPageBtn.className = 'pagination-btn';
+        lastPageBtn.textContent = totalPages.toString();
+        lastPageBtn.addEventListener('click', () => {
+            currentPage = totalPages;
+            renderProxyList();
+        });
+        paginationContainer.appendChild(lastPageBtn);
+    }
+    
+    // Next button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = `pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderProxyList();
+        }
+    });
+    paginationContainer.appendChild(nextBtn);
+}
+
+// Function to select a proxy
+async function selectProxy(index) {
+    selectedProxy = filteredProxyList[index];
+    
+    // Update selected proxy info
+    document.getElementById('selected-ip').textContent = selectedProxy.ip;
+    document.getElementById('selected-port').textContent = selectedProxy.port;
+    document.getElementById('selected-country').textContent = selectedProxy.country;
+    document.getElementById('selected-provider').textContent = selectedProxy.provider;
+    
+    // Update form fields
+    const accountName = `${selectedProxy.country} - ${selectedProxy.provider}`;
+    const path = `/${selectedProxy.ip}-${selectedProxy.port}`;
+    
+    document.getElementById('vmess-name').value = accountName;
+    document.getElementById('vless-name').value = accountName;
+    document.getElementById('trojan-name').value = accountName;
+    document.getElementById('ss-name').value = accountName;
+    
+    document.getElementById('vmess-path').value = path;
+    document.getElementById('vless-path').value = path;
+    document.getElementById('trojan-path').value = path;
+    document.getElementById('ss-path').value = path;
+    
+    // Set default UUID
+    document.getElementById('vmess-uuid').value = defaultUUID;
+    document.getElementById('vless-uuid').value = defaultUUID;
+    
+    // Set default password (same as UUID)
+    document.getElementById('trojan-password').value = defaultUUID;
+    document.getElementById('ss-password').value = defaultUUID;
+}
+
+// Function to show proxy list section
+function showProxyListSection() {
+    proxyListSection.classList.remove('hidden');
+    accountCreationSection.classList.add('hidden');
+    resultSection.classList.add('hidden');
+}
+
+// Function to show account creation section
+function showAccountCreationSection() {
+    proxyListSection.classList.add('hidden');
+    accountCreationSection.classList.remove('hidden');
+    resultSection.classList.add('hidden');
+}
+
+// Helper functions
+function generateUUID(elementId) {
+    document.getElementById(elementId).value = defaultUUID;
+}
+
+function generatePassword(elementId) {
+    // Set password to the default UUID instead of generating a random one
+    document.getElementById(elementId).value = defaultUUID;
+}
+
+// Update the loadProxyList function to better handle GitHub data and CORS issues
+function loadProxyList(url) {
+    // Show loading indicator
+    loadingIndicator.classList.remove('hidden');
+    proxyListContainer.innerHTML = '';
+    noProxiesMessage.classList.add('hidden');
+    
+    // Try multiple CORS proxies in sequence
+    const corsProxies = [
+        // Direct fetch (no proxy)
+        async () => {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Direct fetch failed');
+            return await response.text();
+        },
+        // CORS Anywhere proxy
+        async () => {
+            const corsUrl = `https://cors-anywhere.herokuapp.com/${url}`;
+            const response = await fetch(corsUrl);
+            if (!response.ok) throw new Error('CORS Anywhere proxy failed');
+            return await response.text();
+        },
+        // AllOrigins proxy
+        async () => {
+            const corsUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+            const response = await fetch(corsUrl);
+            if (!response.ok) throw new Error('AllOrigins proxy failed');
+            const data = await response.json();
+            return data.contents;
+        },
+        // CORS.sh proxy
+        async () => {
+            const corsUrl = `https://cors.sh/${url}`;
+            const response = await fetch(corsUrl, {
+                headers: {
+                    'x-cors-api-key': 'temp_' + Math.random().toString(36).substring(2,12),
+                }
+            });
+            if (!response.ok) throw new Error('CORS.sh proxy failed');
+            return await response.text();
+        }
+    ];
+    
+    // Try each proxy in sequence
+    (async function tryProxies(index = 0) {
+        if (index >= corsProxies.length) {
+            console.error('All proxies failed');
+            loadingIndicator.classList.add('hidden');
+            noProxiesMessage.classList.remove('hidden');
+            // Fall back to sample data
+            displayFallbackProxyList();
+            return;
+        }
+        
+        try {
+            const text = await corsProxies[index]();
+            console.log("Fetched data:", text.substring(0, 200) + "..."); // Debug log (truncated)
+            processProxyData(text);
+            loadingIndicator.classList.add('hidden');
+        } catch (error) {
+            console.error(`Proxy ${index} failed:`, error);
+            // Try next proxy
+            tryProxies(index + 1);
+        }
+    })();
+}
+</script>
+</body>
+</html>
